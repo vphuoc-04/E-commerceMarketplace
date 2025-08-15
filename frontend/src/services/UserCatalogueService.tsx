@@ -1,5 +1,5 @@
 // Configs
-import axiosInstance from "../configs/axios";
+import { userCatalogueServiceInstance } from '../configs/axios';
 
 // Helpers
 import { handleAxiosError } from "../helpers/axiosHelper";
@@ -16,11 +16,11 @@ const fetchUserCatalogue = async(): Promise<UserCatalogue[]> => {
             return [];
         }
 
-        const resposne = await axiosInstance.get('/user_catalogue', {
+        const resposne = await userCatalogueServiceInstance.get('/user_catalogue/get_all_catalogue', {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
-        })
+        });
 
         console.log("User cataloge: ", resposne.data.data)
 
@@ -32,7 +32,7 @@ const fetchUserCatalogue = async(): Promise<UserCatalogue[]> => {
     }
 }
 
-const createUserCatalogue = async(name: string, publish: string): Promise<boolean> => {
+const createUserCatalogue = async(name: string, publish: string, users: number[], permissions: number[]): Promise<boolean> => {
     try {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -40,9 +40,13 @@ const createUserCatalogue = async(name: string, publish: string): Promise<boolea
             return false;
         }
 
-        const response = await axiosInstance.post(
-            "/user_catalogue",
-            { name, publish },
+        const response = await userCatalogueServiceInstance.post(
+            "/user_catalogue/create_catalogue", { 
+                name, 
+                publish,
+                users,
+                permissions
+            },
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -67,9 +71,12 @@ const updateUserCatalogue = async(id: number, name: string, publish: string): Pr
             return false;
         }
 
-        const response = await axiosInstance.put(
-            `/user_catalogue/${id}`,
-            { name, publish },
+        const response = await userCatalogueServiceInstance.put(
+            `/user_catalogue/update_catalogue/${id}`,
+            { 
+                name, 
+                publish 
+            },
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -94,7 +101,7 @@ const deleteUserCatalogue = async (id: number): Promise<boolean> => {
             return false;
         }
 
-        const response = await axiosInstance.delete(`/user_catalogue/${id}`, {
+        const response = await userCatalogueServiceInstance.delete(`/user_catalogue/delete_catalogue/${id}`, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },

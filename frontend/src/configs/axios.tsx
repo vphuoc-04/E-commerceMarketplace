@@ -1,12 +1,36 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 
-const axiosInstance: AxiosInstance = axios.create({
-    baseURL: 'http://localhost:8080/api/v1',
-    withCredentials: true, 
-    headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
+// Định nghĩa các cổng backend
+export const AUTH_SERVICE_PORT = 8081;
+export const USER_SERVICE_PORT = 8082;
+export const USER_CATALOGUE_SERVICE_PORT = 8083;
+export const PERMISSION_SERVICE_PORT = 8084;
+
+export const serviceConfig = {
+  authServiceBaseURL: `http://localhost:${AUTH_SERVICE_PORT}/api/v1`,
+  userServiceBaseURL: `http://localhost:${USER_SERVICE_PORT}/api/v1`,
+  userCatalogueServiceBaseURL: `http://localhost:${USER_CATALOGUE_SERVICE_PORT}/api/v1`,
+  permissionServiceBaseURL: `http://localhost:${PERMISSION_SERVICE_PORT}/api/v1`,
+};
+
+export const authServiceInstance = axios.create({
+  baseURL: serviceConfig.authServiceBaseURL,
+  withCredentials: true,
+});
+
+export const userServiceInstance = axios.create({
+  baseURL: serviceConfig.userServiceBaseURL,
+  withCredentials: true,
+});
+
+export const userCatalogueServiceInstance = axios.create({
+  baseURL: serviceConfig.userCatalogueServiceBaseURL,
+  withCredentials: true,
+});
+
+export const permissionServiceInstance = axios.create({
+  baseURL: serviceConfig.permissionServiceBaseURL,
+  withCredentials: true,
 });
 
 const refreshToken = async () => {
@@ -18,7 +42,7 @@ const refreshToken = async () => {
             return null;
         }
 
-        const response = await axios.post("http://localhost:8080/api/v1/auth/refresh_token", { 
+        const response = await axios.post("http://localhost:8081/api/v1/auth/refresh_token", { 
                 refreshToken 
             },
             {
@@ -46,36 +70,34 @@ const refreshToken = async () => {
     }
 };
 
-axiosInstance.interceptors.response.use(
-    response => response,
-    async error => {
-        const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
-
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true; 
-
-            const newToken = await refreshToken(); 
-            console.log("New token after refresh:", newToken);
-            
-            if (newToken) {
-                originalRequest.headers = {
-                    ...originalRequest.headers,
-                    Authorization: `Bearer ${newToken}`
-                };
-                return axiosInstance(originalRequest);
-            }
-        }
-
+// Ví dụ interceptor cho từng instance
+const setupResponseInterceptor = (instance: AxiosInstance) => {
+  instance.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+      if (originalRequest.url?.includes("/auth/refresh_token")) {
         return Promise.reject(error);
+      }
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        const newToken = await refreshToken();
+        if (newToken) {
+          originalRequest.headers = {
+            ...originalRequest.headers,
+            Authorization: `Bearer ${newToken}`,
+          };
+          return instance(originalRequest);
+        } else {
+          return Promise.reject(error);
+        }
+      }
+      return Promise.reject(error);
     }
-);
+  );
+};
 
-axiosInstance.interceptors.request.use(config => {
-    const token = localStorage.getItem("token");
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-});
+setupResponseInterceptor(authServiceInstance);
+setupResponseInterceptor(userServiceInstance);
+setupResponseInterceptor(userCatalogueServiceInstance);
 
-export default axiosInstance;

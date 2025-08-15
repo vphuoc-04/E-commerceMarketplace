@@ -1,5 +1,5 @@
 // Configs
-import axiosInstance from "../configs/axios";
+import { authServiceInstance } from '../configs/axios';
 
 // Helpers
 import { handleAxiosError } from "../helpers/axiosHelper";
@@ -20,7 +20,7 @@ type LoginPayload = {
 
 const customerRegister = async (payload: RegisterPayload): Promise<boolean> => {
     try {
-        const response = await axiosInstance.post('/auth/register', {
+        const response = await authServiceInstance.post('/auth/register', {
             firstName: payload.firstName,
             middleName: payload.middleName,
             lastName: payload.lastName,
@@ -41,7 +41,7 @@ const customerRegister = async (payload: RegisterPayload): Promise<boolean> => {
 
 const login = async (payload:LoginPayload): Promise<boolean> => {
     try {
-        const response = await axiosInstance.post('/auth/login', {
+        const response = await authServiceInstance.post('/auth/login', {
             email: payload.email,
             password: payload.password
         })
@@ -69,10 +69,10 @@ const logout = async (): Promise<boolean> => {
             console.error("Token not found");
         }
 
-        await axiosInstance.get("/auth/logout", {
+        await authServiceInstance.get("/auth/logout", {
             headers: {
-                'Authorization': `Bearer ${token}`
-            }
+                Authorization: `Bearer ${token}`,
+            },
         })
 
         localStorage.removeItem("user");

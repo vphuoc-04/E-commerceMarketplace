@@ -6,5 +6,5 @@ module.exports = {
             sans: fontFamily.sans,
         },
     },
-    plugins: [],
+    plugins: [require("tailwindcss-animate")],
 }
